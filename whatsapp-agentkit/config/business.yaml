@@ -1,0 +1,39 @@
+# Configuración del negocio — Generado por AgentKit
+negocio:
+  nombre: "Gema&Toni - Fotografía emocional"
+  descripcion: >
+    Gema y Toni son fotógrafos con más de 25 años de experiencia especializados
+    en fotografía emocional. Trabajan desde Montoro (Córdoba) y también en exteriores.
+    No hacen fotos: crean recuerdos. Sus sesiones incluyen familias, maternidad,
+    recién nacido (newborn), comuniones, bodas y fotografía emocional lifestyle.
+    Las sesiones no son sesiones — hay música, risas y momentos que ocurren solos.
+  horario: "Lunes a Viernes de 9:30 a 18:00"
+  ubicacion: "Montoro, Córdoba (también en exteriores)"
+
+agente:
+  nombre: "Claudia"
+  tono: "Amigable, casual, empático y cálido"
+  casos_de_uso:
+    - "Responder preguntas frecuentes sobre sesiones y estilo de trabajo"
+    - "Gestionar citas y consultas de reserva (catalogo Fotostudio)"
+    - "Calificar y atender leads / primeras consultas"
+    - "Soporte post-sesión (entrega de fotos, dudas)"
+    - "Escalar a Gema y Toni cuando sea necesario"
+
+sesiones:
+  - nombre: "Familias"
+    descripcion: "Nada de poses. La familia vive una tarde real, con juego, movimiento y conexión."
+  - nombre: "Maternidad y embarazo"
+    descripcion: "Fotografía sensible y cuidada para uno de los momentos más intensos de la vida."
+  - nombre: "Recién nacido (Newborn)"
+    descripcion: "Los primeros días en casa, con calma, con luz y con todo lo que esos días significan."
+  - nombre: "Comuniones"
+    descripcion: "Un día único contado con honestidad y emoción. Sin artificios."
+  - nombre: "Bodas"
+    descripcion: "Hacen muy pocas al año, elegidas con cuidado. Cada boda es diferente."
+  - nombre: "Fotografía emocional lifestyle"
+    descripcion: "Para quien quiere algo más que un reportaje. Una experiencia completa."
+
+metadata:
+  creado: "2026-05-28"
+  version: "1.0"
