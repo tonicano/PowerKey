@@ -36,42 +36,19 @@ def obtener_mensaje_fallback() -> str:
     return config.get("fallback_message", "Perdona, no he entendido bien tu mensaje. ¿Me lo puedes contar de otra manera?")
 
 
-async def generar_respuesta(
-    mensaje: str,
-    historial: list[dict],
-    audio_base64: str | None = None,
-    audio_media_type: str | None = None,
-) -> str:
-    """Genera una respuesta usando Claude API. Soporta texto y audio."""
-    if not mensaje and not audio_base64:
+async def generar_respuesta(mensaje: str, historial: list[dict]) -> str:
+    """Genera una respuesta usando Claude API."""
+    if not mensaje or mensaje == "__audio_no_transcrito__":
+        if mensaje == "__audio_no_transcrito__":
+            return "¡Hola! He recibido tu nota de voz pero no he podido escucharla bien. ¿Me escribes lo que necesitas? 😊"
+        return obtener_mensaje_fallback()
+
+    if len(mensaje.strip()) < 2:
         return obtener_mensaje_fallback()
 
     system_prompt = cargar_system_prompt()
     mensajes = [{"role": m["role"], "content": m["content"]} for m in historial]
-
-    if audio_base64 and audio_media_type:
-        # Mensaje con audio — Claude lo escucha y responde
-        contenido_usuario: list = [
-            {
-                "type": "text",
-                "text": "El cliente ha enviado un mensaje de voz. Escúchalo y responde como Claudia, en español, de forma natural y cercana."
-            },
-            {
-                "type": "audio",
-                "source": {
-                    "type": "base64",
-                    "media_type": audio_media_type,
-                    "data": audio_base64,
-                }
-            }
-        ]
-        if mensaje:
-            contenido_usuario.insert(0, {"type": "text", "text": mensaje})
-        mensajes.append({"role": "user", "content": contenido_usuario})
-    else:
-        if len(mensaje.strip()) < 2:
-            return obtener_mensaje_fallback()
-        mensajes.append({"role": "user", "content": mensaje})
+    mensajes.append({"role": "user", "content": mensaje})
 
     try:
         response = await client.messages.create(
@@ -85,6 +62,4 @@ async def generar_respuesta(
         return respuesta
     except Exception as e:
         logger.error(f"Error Claude API: {e}")
-        if audio_base64:
-            return "¡Hola! He recibido tu nota de voz pero tengo un pequeño problema para escucharla ahora mismo. ¿Me puedes escribir lo que necesitas? 😊"
         return obtener_mensaje_error()

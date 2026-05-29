@@ -1,5 +1,6 @@
 # Adaptador para Twilio WhatsApp
 import os
+import io
 import logging
 import base64
 import httpx
@@ -7,6 +8,37 @@ from fastapi import Request
 from agent.providers.base import ProveedorWhatsApp, MensajeEntrante
 
 logger = logging.getLogger("agentkit")
+
+
+async def transcribir_audio(audio_bytes: bytes, media_type: str) -> str | None:
+    """Transcribe audio usando OpenAI Whisper."""
+    try:
+        from openai import AsyncOpenAI
+        openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+        # Determinar extensión según el tipo de audio
+        extension = "ogg"
+        if "mpeg" in media_type or "mp3" in media_type:
+            extension = "mp3"
+        elif "mp4" in media_type or "m4a" in media_type:
+            extension = "m4a"
+        elif "wav" in media_type:
+            extension = "wav"
+
+        audio_file = io.BytesIO(audio_bytes)
+        audio_file.name = f"audio.{extension}"
+
+        transcripcion = await openai_client.audio.transcriptions.create(
+            model="whisper-1",
+            file=audio_file,
+            language="es",
+        )
+        texto = transcripcion.text.strip()
+        logger.info(f"Transcripción Whisper: {texto}")
+        return texto if texto else None
+    except Exception as e:
+        logger.error(f"Error Whisper: {e}")
+        return None
 
 
 class ProveedorTwilio(ProveedorWhatsApp):
@@ -18,15 +50,12 @@ class ProveedorTwilio(ProveedorWhatsApp):
         self.phone_number = os.getenv("TWILIO_PHONE_NUMBER")
 
     async def parsear_webhook(self, request: Request) -> list[MensajeEntrante]:
-        """Parsea el payload form-encoded de Twilio, incluyendo mensajes de audio."""
+        """Parsea el payload form-encoded de Twilio, transcribiendo audios con Whisper."""
         form = await request.form()
         texto = form.get("Body", "")
         telefono = form.get("From", "").replace("whatsapp:", "")
         mensaje_id = form.get("MessageSid", "")
         num_media = int(form.get("NumMedia", "0"))
-
-        audio_base64 = None
-        audio_media_type = None
 
         if num_media > 0:
             media_url = form.get("MediaUrl0", "")
@@ -41,25 +70,27 @@ class ProveedorTwilio(ProveedorWhatsApp):
                             media_url,
                             headers={"Authorization": f"Basic {auth}"},
                             follow_redirects=True,
-                            timeout=15.0
+                            timeout=20.0
                         )
                         if r.status_code == 200:
-                            audio_base64 = base64.b64encode(r.content).decode()
-                            audio_media_type = media_type
                             logger.info(f"Audio descargado: {media_type}, {len(r.content)} bytes")
+                            transcripcion = await transcribir_audio(r.content, media_type)
+                            if transcripcion:
+                                texto = transcripcion
+                            else:
+                                texto = "__audio_no_transcrito__"
                 except Exception as e:
-                    logger.error(f"Error descargando audio: {e}")
+                    logger.error(f"Error procesando audio: {e}")
+                    texto = "__audio_no_transcrito__"
 
-        if not texto and not audio_base64:
+        if not texto:
             return []
 
         return [MensajeEntrante(
             telefono=telefono,
-            texto=texto or "",
+            texto=texto,
             mensaje_id=mensaje_id,
             es_propio=False,
-            audio_base64=audio_base64,
-            audio_media_type=audio_media_type,
         )]
 
     async def enviar_mensaje(self, telefono: str, mensaje: str) -> bool:
