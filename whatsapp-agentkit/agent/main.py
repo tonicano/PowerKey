@@ -56,15 +56,21 @@ async def webhook_handler(request: Request):
         mensajes = await proveedor.parsear_webhook(request)
 
         for msg in mensajes:
-            if msg.es_propio or not msg.texto:
+            if msg.es_propio or (not msg.texto and not msg.audio_base64):
                 continue
 
             logger.info(f"Mensaje de {msg.telefono}: {msg.texto}")
 
             historial = await obtener_historial(msg.telefono)
-            respuesta = await generar_respuesta(msg.texto, historial)
+            respuesta = await generar_respuesta(
+                msg.texto,
+                historial,
+                audio_base64=msg.audio_base64,
+                audio_media_type=msg.audio_media_type,
+            )
 
-            await guardar_mensaje(msg.telefono, "user", msg.texto)
+            texto_guardado = msg.texto or "[audio]"
+            await guardar_mensaje(msg.telefono, "user", texto_guardado)
             await guardar_mensaje(msg.telefono, "assistant", respuesta)
 
             await proveedor.enviar_mensaje(msg.telefono, respuesta)

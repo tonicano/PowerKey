@@ -1,6 +1,6 @@
 # Clase base para proveedores de WhatsApp
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from fastapi import Request
 
 
@@ -11,6 +11,8 @@ class MensajeEntrante:
     texto: str
     mensaje_id: str
     es_propio: bool
+    audio_base64: str | None = field(default=None)
+    audio_media_type: str | None = field(default=None)
 
 
 class ProveedorWhatsApp(ABC):
